@@ -1,4 +1,8 @@
 # streaming-04-lindseysullivan
+### Student Name: Lindsey Sullivan
+### Date: 09/13/2023
+### Github Repository: https://github.com/LindseySully/streaming-04-lindseysullivan
+
 
 ## Project Prerequisties
 1. Git
@@ -7,6 +11,22 @@
 1. VS Code Extension: Python (by Microsoft)
 1. VS Code Extension: Docker (by Microsoft)
 1. Docker Desktop
+
+## Project Libraries
+1. sys
+    - Used to provide various functions and variables that can be used to manipulate different parts of the python runtime environment
+1. datetime
+    - Used to modify the date format of consumer2.py messages
+1. time
+    - Used to delay the messages sent from producer.py
+1. csv
+    - Used to read & write to CSV files
+1. os
+    - Used to specify dedicated paths to directories within the project
+1. pika
+    - Used to implement the AMQP protocol for RabbitMQ.
+1. webbrowser
+    - Used to connect to the RabbitMQ Admin webpage
 
 ## Docker Setup
 #### RabbitMQ Setup
@@ -24,21 +44,6 @@
     - `-p 15672:15672` gives port access to RabbitMQ's web UI port
     - `-e RABBITMQ_DEFAULT_USER=myuser` sets the username for the RabbitMQ Admin Website
     - `-e RABBITMQ_DEFAULT_PASS=mypassword` sets the password for the RabbitMQ Admin Website
-
-#### Producer Setup
-To run the python programs in a docker container we will complete the following steps. 
-1. Setup the docker-compose.yml to contain items for producer
-1. Set up the Dockerfile.producer
-    - A DockerFile is necessary in order to eventually create the image which will allow us to run the container. 
-1. Run the following in the command line:
-    `docker build -t producer-image -f Dockerfile.producer .`
-    - This will direct Docker to the correct Dockerfile for the program
-
-#### Consumer Setup
-1. Setup the docker-compose.yml to contain items for producer
-1. Setup the Dockerfile.consumer
-1. Run the following in the command line:
-    `docker build -t consumer-image -f Dockerfile.consumer .`
 
 ### Troubleshooting Tips:
 - Docker may have issues with the docker run code; this can be troubleshooted in the terminal with the following:
@@ -68,31 +73,44 @@ To run the python programs in a docker container we will complete the following 
 
 ![Alt text](<Screenshots/docker front-in.png>)
 
-### Dockerfile
-- This project uses a singular Dockerfile for multiple consumers; the image created from the Dockerfile will run scripts for that will call the consumer programs
 
-# Program File Overview
 
-# Running the Program with Docker
-To run the program with Docker we can create a DockerFile to package the program and run it as a container. For this we will do the following:
-1. Create a Dockerfile in the same directory as the python program with the following content:
-```
-FROM python:3.8
-# Copy your Python program into the container
-COPY your_program.py /app/your_program.py
-# Install dependencies
-RUN pip install pika
-# Run your Python program
-CMD ["python", "/app/your_program.py"]
-```
-1. Replace your_program.py with the program names
-1. Build your Docker image and run the container:
-```
-docker build -t rabbitmq-python-app .
-docker run -it --rm --link rabbitmq-container rabbitmq-python-app
-```
-- This assumes that the RabbitMQ container is running with the name 'rabbit-mq-container'
+# Program Files Overview
 
-To run the multiple consumers: use the command
-`docker run consumer-image python /app/Consumers/consumer1.py`
-`docker run consumer-image python /app/Consumers/consumer2.py`
+## producer.py
+The producer program sends information from the spotifytop200songs.csv to dedicated queues. 
+- Queue 1: Artist_Information
+    - Will send artist_name, artist_num, artist_individual,artist_id from the CSV file
+- Queue 2: Song_Information
+    - Will send release_date, album_num_tracks, album_cover from the CSV file
+- Max_Messages: Set to limit the amount of information streamed, this can be increased or decreased
+
+- offer_rabbitmq_admin_site: offers the user to open the RabbitMQ admin page
+- send_to_queue: connect and declare the queue and print message of what queue and server the message was sent to.
+    - host (str): host name or IP address of rabbitmq server
+    - queue_name (str): the name of the queue
+    - message (str): message being sent
+- stream_csv_messages: read input file and send each row as a message to a dedicated queue for the worker.
+    - input_file_name (str): The name of the CSV file
+    - host (str): host name or IP address of the rabbitmq server
+    - queue_name (str): the name of the queue
+    - messages_sent: counter for messages
+    - max_messages: amount of messages to send before closing the connection
+
+## consumer1.py
+This consumer program reads messages from the **artist_information** queue. It takes the information and sends the original message to the *original_received_messages.csv*. It also takes the message and transforms the message to all caps, and sends the output to the *artist_message.csv*.
+
+## consumer2.py
+This consumer program reads messages from the **song_information** queue. It takes the information and sends the original message to the *original_received_messages.csv*. It also takes the message and transforms the date format from YYYY-MM-DD to DD-MM-YYYY and sends the output to *song_message.csv*.
+
+## /CSV-Files
+- Contains all CSV-Files used for the program:
+    - Input File: 
+        - Spotifytop200songs.csv
+    - Output Files:
+        - artist_message.csv : messages received from the artist_information queue and the message is now in all caps.
+        - song_message.csv : messages received from the song_information queue and the date format is transformed
+        - original_received_messages.csv: original messages received from both queues
+
+## Screenshot
+![Alt text](<Screenshots/Terminal Output.png>)
